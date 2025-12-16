@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nano Banana AI 绘图客户端</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Nano Banana Pro AI 绘图（Grsai API）</h1>
+            <div class="api-config">
+                <div class="config-item">
+                    <label for="apiBaseUrl">API Base URL:</label>
+                    <input type="text" id="apiBaseUrl" placeholder="https://api.example.com" value="https://grsai.dakka.com.cn">
+                </div>
+                <div class="config-item">
+                    <label for="apiKey">API Key:</label>
+                    <input type="password" id="apiKey" placeholder="输入你的 API Key">
+                </div>
+            </div>
+            <div id="creditsDisplay" class="credits-display" style="display: none;">
+                <span class="credits-label">积分余额:</span>
+                <span id="creditsValue" class="credits-value">--</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="controls">
+                <div class="form-group">
+                    <label for="model">模型 (Model)</label>
+                    <select id="model">
+                        <option value="nano-banana-fast">nano-banana-fast</option>
+                        <option value="nano-banana">nano-banana</option>
+                        <option value="nano-banana-pro">nano-banana-pro</option>
+                        <option value="nano-banana-pro-vt" selected>nano-banana-pro-vt</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="prompt">提示词 (Prompt)</label>
+                    <textarea id="prompt" rows="3" placeholder="描述你想生成的画面..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="refImages">图像输入 (可选)</label>
+                    <input type="file" id="refImages" multiple accept="image/*">
+                    <div id="imagePreview" class="image-preview"></div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group half">
+                        <label for="aspectRatio">比例 (Aspect Ratio)</label>
+                        <select id="aspectRatio">
+                            <option value="auto">Auto</option>
+                            <option value="1:1">1:1</option>
+                            <option value="16:9">16:9</option>
+                            <option value="9:16">9:16</option>
+                            <option value="4:3">4:3</option>
+                            <option value="3:4">3:4</option>
+                            <option value="3:2">3:2</option>
+                            <option value="2:3">2:3</option>
+                            <option value="5:4">5:4</option>
+                            <option value="4:5">4:5</option>
+                            <option value="21:9">21:9</option>
+                        </select>
+                    </div>
+                    <div class="form-group half">
+                        <label for="imageSize">尺寸 (Pro Only)</label>
+                        <select id="imageSize">
+                            <option value="1K">1K</option>
+                            <option value="2K">2K</option>
+                            <option value="4K" selected>4K</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group half">
+                        <label for="batchCount">批量数量 (并发)</label>
+                        <input type="number" id="batchCount" value="1" min="1" max="10">
+                    </div>
+                    <div class="form-group half" style="display: flex; align-items: flex-end;">
+                        <button id="generateBtn" class="primary-btn">开始生成</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="results-area">
+                <div class="results-header">
+                    <h2>生成结果</h2>
+                    <button id="clearFailedBtn" class="text-btn">清除失败项目</button>
+                </div>
+                <div id="resultsGrid" class="results-grid">
+                    <!-- 结果卡片将在这里生成 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" class="modal">
+        <div class="modal-content lightbox-content">
+            <span class="close-modal">&times;</span>
+            <img id="lightboxImage" class="lightbox-img" src="" alt="Full size">
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>请求详情</h3>
+            <div id="infoContent">
+                <!-- Info content will be injected here -->
+            </div>
+            <div class="modal-actions">
+                <button id="copyPromptBtn" class="action-btn">+ 复制 Prompt</button>
+                <div class="rerun-group">
+                    <input type="number" id="rerunCount" value="1" min="1" max="10">
+                    <button id="rerunBtn">再次运行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
