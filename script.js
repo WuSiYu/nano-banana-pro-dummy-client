@@ -419,7 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (result.status === 'failed') {
             const reason = result.failure_reason ? `原因: ${result.failure_reason}` : '原因未知';
             const detail = result.error ? `详情: ${result.error}` : '';
-            // "output_moderation": 输出违规, "input_moderation": 输入违规, "error": 其他错误
             const reason_map = {
                 "output_moderation": "违反使用政策（生成内容）",
                 "input_moderation": "违反使用政策（输入内容）"
@@ -441,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div style="padding: 10px; display: flex; gap: 10px; justify-content: left;">
                 <a href="${imageUrl}" target="_blank" class="retry-btn view-original-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; margin: 0;">查看原图</a>
-                <button class="retry-btn regenerate-btn" style="margin: 0;">再次生成</button>
+                <button class="retry-btn regenerate-btn" style="margin: 0;">重新生成</button>
             </div>
         `;
 
