@@ -2,6 +2,8 @@
 
 <img src="./logo.png" alt="Logo" width="200"/>
 
+https://wusiyu.github.io/nano-banana-pro-dummy-client/
+
 一个旨在方便个人使用Nano Banana Pro的便宜第三方API的客户端WebUI，提供非阻塞的连续生成、多图并发生成、失败重试等功能，更方便使用这些可能不稳定或高延迟的第三方API。
 
 目前支持的第三方API提供商：
@@ -20,6 +22,9 @@
 ![screenshot](./screenshot.jpeg)
 
 ## 使用方法
+直接访问：https://wusiyu.github.io/nano-banana-pro-dummy-client/
+
+*或者：*
 1. 克隆本仓库或下载zip到本地
 2. 打开`index.html`，在API配置区域填写你的API Base URL和API Key
 3. 输入你的生成参数，点击生成按钮开始使用
