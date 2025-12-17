@@ -421,12 +421,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const detail = result.error ? `详情: ${result.error}` : '';
             const reason_map = {
                 "output_moderation": "违反使用政策（生成内容）",
-                "input_moderation": "违反使用政策（输入内容）"
+                "input_moderation": "违反使用政策（输入内容）",
+                "error": "其他错误"
             };
             const mappedReason = reason_map[result.failure_reason] || reason;
             renderError(container, `${mappedReason}<br>${detail}`, baseUrl, apiKey, requestData);
         } else if (result.error) {
-             renderError(container, result.error, baseUrl, apiKey, requestData);
+            renderError(container, result.error, baseUrl, apiKey, requestData);
         } else {
             // Maybe it's still running? But we expected final result.
             renderError(container, '任务未完成或状态未知: ' + result.status, baseUrl, apiKey, requestData);
@@ -474,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="result-image-container">
                 <div class="result-status">
                     <div style="font-size: 5rem; margin-bottom: 10px;">⚠</div>
-                    <div class="status-error">生成失败<br>${errorMessage}</div>
+                    <div class="status-error"><b style="font-size: 1.1rem; line-height: 2;">生成失败</b><br>${errorMessage}</div>
                 </div>
             </div>
             <button class="retry-btn" style="margin: 10px;">重试</button>
