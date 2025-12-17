@@ -198,6 +198,10 @@ main {
 }
 
 @media (max-width: 900px) {
+    body::after {
+        display: none;
+    }
+
     main {
         grid-template-columns: 1fr;
     }
