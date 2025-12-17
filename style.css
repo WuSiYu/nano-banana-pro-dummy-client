@@ -92,6 +92,24 @@ body {
     color: var(--text-main);
     line-height: 1.6;
     padding: 20px;
+    position: relative;
+    min-height: 100vh;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 500px;
+    height: 500px;
+    background-image: url('logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: bottom right;
+    opacity: 0.05;
+    z-index: -1;
+    pointer-events: none;
 }
 
 .container {
