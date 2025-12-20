@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const rerunCountInput = document.getElementById('rerunCount');
     const closeModals = document.querySelectorAll('.close-modal');
     const clearFailedBtn = document.getElementById('clearFailedBtn');
+    const copyPromptInputBtn = document.getElementById('copyPromptInput');
+    const pastePromptInputBtn = document.getElementById('pastePromptInput');
 
     // Credits Display
     const creditsDisplay = document.getElementById('creditsDisplay');
@@ -31,6 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentRequestData = null;
     let currentApiKey = null;
     let currentBaseUrl = null;
+
+    // Image deduplication storage
+    const imageHashMap = new Map(); // hash -> base64
+    let currentImageHashes = []; // current selected image hashes
 
     // Load API Key from localStorage
     const savedApiKey = localStorage.getItem('nanoBananaApiKey');
@@ -50,6 +56,39 @@ document.addEventListener('DOMContentLoaded', () => {
     apiKeyInput.addEventListener('change', updateCredits);
     apiKeyInput.addEventListener('blur', updateCredits);
     apiBaseUrlInput.addEventListener('change', updateCredits);
+
+    // Copy Prompt Button
+    copyPromptInputBtn.addEventListener('click', () => {
+        const promptText = promptInput.value.trim();
+        if (!promptText) {
+            alert('提示词为空');
+            return;
+        }
+        navigator.clipboard.writeText(promptText).then(() => {
+            const originalText = copyPromptInputBtn.textContent;
+            copyPromptInputBtn.textContent = '✓ 已复制';
+            setTimeout(() => copyPromptInputBtn.textContent = originalText, 2000);
+        }).catch(err => {
+            alert('复制失败: ' + err.message);
+        });
+    });
+
+    // Paste Prompt Button
+    pastePromptInputBtn.addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+                promptInput.value = text;
+                const originalText = pastePromptInputBtn.textContent;
+                pastePromptInputBtn.textContent = '✓ 已粘贴';
+                setTimeout(() => pastePromptInputBtn.textContent = '⧉ 粘贴并覆盖', 2000);
+            } else {
+                alert('剪贴板为空');
+            }
+        } catch (err) {
+            alert('粘贴失败: ' + err.message);
+        }
+    });
 
     // Close Modals Logic
     closeModals.forEach(btn => {
@@ -119,10 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const files = Array.from(e.target.files);
         console.log('Files selected:', files);
 
-        base64Images = [];
+        currentImageHashes = [];
         imagePreview.innerHTML = '';
 
-        if (files.length === 0) return;
+        if (files.length === 0) {
+            base64Images = [];
+            return;
+        }
 
         generateBtn.disabled = true;
         const originalText = generateBtn.textContent;
@@ -131,8 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const file of files) {
             try {
                 const base64 = await convertFileToBase64(file);
-                base64Images.push(base64);
-                console.log('Converted image to base64, length:', base64.length);
+                const hash = await hashString(base64);
+
+                // Store image only once per hash
+                if (!imageHashMap.has(hash)) {
+                    imageHashMap.set(hash, base64);
+                    console.log('Stored new image with hash:', hash.substring(0, 8));
+                } else {
+                    console.log('Image already stored with hash:', hash.substring(0, 8));
+                }
+
+                currentImageHashes.push(hash);
 
                 const img = document.createElement('img');
                 img.src = base64;
@@ -143,6 +194,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('图片处理失败: ' + file.name);
             }
         }
+
+        // Update base64Images array from current hashes
+        base64Images = currentImageHashes.map(hash => imageHashMap.get(hash));
 
         generateBtn.disabled = false;
         generateBtn.textContent = originalText;
@@ -177,6 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (batchCount > 10) {
+            if (!confirm(`请确认你真的要发送${batchCount}条请求？`)) {
+                return;
+            }
+        }
+
         const requestData = {
             model: modelSelect.value,
             prompt: prompt,
@@ -192,6 +252,15 @@ document.addEventListener('DOMContentLoaded', () => {
         currentBaseUrl = baseUrl;
 
         console.log('Generating with data:', requestData);
+
+        // Button Feedback
+        if (!generateBtn.textContent.includes('✓')) {
+            const originalBtnText = generateBtn.textContent;
+            generateBtn.textContent = originalBtnText.replace('✦', '✓');
+            setTimeout(() => {
+                generateBtn.textContent = originalBtnText;
+            }, 500);
+        }
 
         for (let i = 0; i < batchCount; i++) {
             createResultCardAndFetch(baseUrl, apiKey, requestData);
@@ -439,9 +508,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="result-image-container">
                 <img src="${imageUrl}" class="result-image" alt="Generated Image">
             </div>
-            <div style="padding: 10px; display: flex; gap: 10px; justify-content: left;">
-                <a href="${imageUrl}" target="_blank" class="retry-btn view-original-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; margin: 0;">查看原图</a>
-                <button class="retry-btn regenerate-btn" style="margin: 0;">重新生成</button>
+            <div style="padding: 10px; display: flex; gap: 10px; justify-content: flex-end;">
+                <a href="${imageUrl}" target="_blank" class="retry-btn view-original-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; margin: 0;"><span class="button-icon">⤢</span>打开原图</a>
+                <button class="retry-btn regenerate-btn" style="margin: 0;"><span class="button-icon">⟳</span>重新生成</button>
             </div>
         `;
 
@@ -474,11 +543,11 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = `
             <div class="result-image-container">
                 <div class="result-status">
-                    <div style="font-size: 5rem; margin-bottom: 10px;">⚠</div>
+                    <div style="font-size: 6rem; margin-bottom: 10px; color: var(--md-sys-color-error);">✕</div>
                     <div class="status-error"><b style="font-size: 1.1rem; line-height: 2;">生成失败</b><br>${errorMessage}</div>
                 </div>
             </div>
-            <button class="retry-btn" style="margin: 10px;">重试</button>
+            <button class="retry-btn" style="margin: 10px; float: right;"><span class="button-icon">⟳</span>重试</button>
         `;
 
         const retryBtn = container.querySelector('.retry-btn');
@@ -534,6 +603,15 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = () => resolve(reader.result);
             reader.onerror = error => reject(error);
         });
+    }
+
+    async function hashString(str) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(str);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
     }
 
     function startCreditsPolling(baseUrl, apiKey) {

@@ -21,7 +21,7 @@
                 </div>
             </div>
             <div id="creditsDisplay" class="credits-display" style="display: none;">
-                <span class="credits-label">积分余额:</span>
+                <span class="credits-label" style="line-height: 0; font-size: 1rem;">$ </span>
                 <span id="creditsValue" class="credits-value">--</span>
             </div>
         </header>
@@ -39,7 +39,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="prompt">提示词 (Prompt)</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label for="prompt" style="margin: 0;">提示词 (Prompt)</label>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="copyPromptInput" class="text-btn" style="padding: 4px 6px; font-size: 0.9rem;">⛶ 全部复制</button>
+                            <button id="pastePromptInput" class="text-btn" style="padding: 4px 6px; font-size: 0.9rem;">⧉ 粘贴并覆盖</button>
+                        </div>
+                    </div>
                     <textarea id="prompt" rows="3" placeholder="描述你想生成的画面..."></textarea>
                 </div>
 
@@ -82,7 +88,7 @@
                         <input type="number" id="batchCount" value="1" min="1" max="10">
                     </div>
                     <div class="form-group half" style="display: flex; align-items: flex-end;">
-                        <button id="generateBtn" class="primary-btn">❯ 开始生成</button>
+                        <button id="generateBtn" class="primary-btn">✦ 开始生成</button>
                     </div>
                 </div>
             </section>
@@ -90,7 +96,7 @@
             <section class="results-area">
                 <div class="results-header">
                     <h2>生成结果</h2>
-                    <button id="clearFailedBtn" class="text-btn">清除失败项目</button>
+                    <button id="clearFailedBtn" class="text-btn">✕ 清除失败项目</button>
                 </div>
                 <div id="resultsGrid" class="results-grid">
                     <!-- 结果卡片将在这里生成 -->
@@ -116,10 +122,10 @@
                 <!-- Info content will be injected here -->
             </div>
             <div class="modal-actions">
-                <button id="copyPromptBtn" class="action-btn">+ 复制 Prompt</button>
+                <button id="copyPromptBtn" class="action-btn">⛶ 复制Prompt</button>
                 <div class="rerun-group">
                     <input type="number" id="rerunCount" value="1" min="1" max="10">
-                    <button id="rerunBtn">再次运行</button>
+                    <button id="rerunBtn">＋ 追加生成</button>
                 </div>
             </div>
         </div>
