@@ -87,7 +87,11 @@
                         <label for="batchCount">批量数量 (并发)</label>
                         <input type="number" id="batchCount" value="1" min="1" max="10">
                     </div>
-                    <div class="form-group half" style="display: flex; align-items: flex-end;">
+                    <div class="form-group half" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; margin-bottom: 4px; font-size: 0.9rem;">
+                            <input type="checkbox" id="autoRetryCheckbox" style="cursor: pointer;">
+                            <span>自动重试</span>
+                        </label>
                         <button id="generateBtn" class="primary-btn">✦ 开始生成</button>
                     </div>
                 </div>

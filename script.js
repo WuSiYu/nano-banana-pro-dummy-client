@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearFailedBtn = document.getElementById('clearFailedBtn');
     const copyPromptInputBtn = document.getElementById('copyPromptInput');
     const pastePromptInputBtn = document.getElementById('pastePromptInput');
+    const autoRetryCheckbox = document.getElementById('autoRetryCheckbox');
 
     // Credits Display
     const creditsDisplay = document.getElementById('creditsDisplay');
@@ -303,9 +304,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function createResultCardAndFetch(baseUrl, apiKey, requestData) {
+    function createResultCardAndFetch(baseUrl, apiKey, requestData, retryCount = 0) {
         const card = document.createElement('div');
         card.className = 'result-card entering';
+        card.dataset.retryCount = retryCount;
+        card.dataset.autoRetryEnabled = autoRetryCheckbox.checked ? 'true' : 'false';
 
         card.addEventListener('animationend', () => {
             card.classList.remove('entering');
@@ -340,11 +343,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         controls.appendChild(infoBtn);
         controls.appendChild(closeBtn);
-        card.appendChild(controls);
 
-        // Initial Loading State with Progress Bar
+        // Create Visual Wrapper
+        const visual = document.createElement('div');
+        visual.className = 'result-card-visual';
+        card.appendChild(visual);
+
+        visual.appendChild(controls);
+
+        // Create content container
         const contentDiv = document.createElement('div');
-        contentDiv.innerHTML = `
+        visual.appendChild(contentDiv);
+
+        // Insert at the beginning of the grid
+        animateGridChange(() => {
+            resultsGrid.insertBefore(card, resultsGrid.firstChild);
+        });
+
+        renderLoadingState(contentDiv, card, baseUrl, apiKey, requestData, retryCount);
+    }
+
+    function renderLoadingState(container, cardElement, baseUrl, apiKey, requestData, retryCount) {
+        const autoRetryStatus = cardElement ? cardElement.dataset.autoRetryEnabled === 'true' : false;
+        const retryText = retryCount > 0 ? `自动重试（第${retryCount}次）` : '自动重试';
+
+        container.innerHTML = `
             <div class="result-image-container">
                 <div class="result-status">
                     <div class="spinner"></div>
@@ -353,22 +376,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="progress-container" style="width: 80%; margin-top: 10px; background: #eee; height: 6px; border-radius: 3px; overflow: hidden; display: none;">
                         <div class="progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s;"></div>
                     </div>
+                    <div class="retry-info" style="margin-top: 10px;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" class="retry-toggle-checkbox" ${autoRetryStatus ? 'checked' : ''}>
+                            <span>${retryText}</span>
+                        </label>
+                    </div>
                 </div>
             </div>
         `;
-        card.appendChild(contentDiv);
 
-        // Insert at the beginning of the grid
-        animateGridChange(() => {
-            resultsGrid.insertBefore(card, resultsGrid.firstChild);
-        });
+        // Add toggle listener
+        const toggleCheckbox = container.querySelector('.retry-toggle-checkbox');
+        if (toggleCheckbox) {
+            toggleCheckbox.addEventListener('change', (e) => {
+                if (cardElement) {
+                    cardElement.dataset.autoRetryEnabled = e.target.checked ? 'true' : 'false';
+                }
+            });
+        }
 
-        fetchImage(baseUrl, apiKey, requestData, card, contentDiv);
+        fetchImage(baseUrl, apiKey, requestData, cardElement, container, retryCount);
     }
 
-    async function fetchImage(baseUrl, apiKey, data, cardElement, contentContainer) {
+    async function fetchImage(baseUrl, apiKey, data, cardElement, contentContainer, retryCount = 0) {
         // If contentContainer is not provided (retry case), find it or use cardElement
         const container = contentContainer || cardElement;
+
+        // Store retry info on card
+        if (cardElement) {
+            cardElement.dataset.retryCount = retryCount;
+        }
 
         const statusText = container.querySelector('.status-text');
         const timerText = container.querySelector('.timer-text');
@@ -473,7 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             if (timerInterval) clearInterval(timerInterval);
-            renderError(container, error.message, baseUrl, apiKey, data);
+            const currentRetryCount = cardElement ? parseInt(cardElement.dataset.retryCount || '0') : retryCount;
+            const autoRetryEnabled = cardElement ? cardElement.dataset.autoRetryEnabled === 'true' : autoRetryCheckbox.checked;
+            renderError(container, error.message, baseUrl, apiKey, data, cardElement, currentRetryCount, autoRetryEnabled);
         }
     }
 
@@ -494,12 +534,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 "error": "其他错误"
             };
             const mappedReason = reason_map[result.failure_reason] || reason;
-            renderError(container, `${mappedReason}<br>${detail}`, baseUrl, apiKey, requestData);
+            const cardElement = container.closest('.result-card');
+            const currentRetryCount = cardElement ? parseInt(cardElement.dataset.retryCount || '0') : 0;
+            const autoRetryEnabled = cardElement ? cardElement.dataset.autoRetryEnabled === 'true' : autoRetryCheckbox.checked;
+            renderError(container, `${mappedReason}<br>${detail}`, baseUrl, apiKey, requestData, cardElement, currentRetryCount, autoRetryEnabled);
         } else if (result.error) {
-            renderError(container, result.error, baseUrl, apiKey, requestData);
+            const cardElement = container.closest('.result-card');
+            const currentRetryCount = cardElement ? parseInt(cardElement.dataset.retryCount || '0') : 0;
+            const autoRetryEnabled = cardElement ? cardElement.dataset.autoRetryEnabled === 'true' : autoRetryCheckbox.checked;
+            renderError(container, result.error, baseUrl, apiKey, requestData, cardElement, currentRetryCount, autoRetryEnabled);
         } else {
             // Maybe it's still running? But we expected final result.
-            renderError(container, '任务未完成或状态未知: ' + result.status, baseUrl, apiKey, requestData);
+            const cardElement = container.closest('.result-card');
+            const currentRetryCount = cardElement ? parseInt(cardElement.dataset.retryCount || '0') : 0;
+            const autoRetryEnabled = cardElement ? cardElement.dataset.autoRetryEnabled === 'true' : autoRetryCheckbox.checked;
+            renderError(container, '任务未完成或状态未知: ' + result.status, baseUrl, apiKey, requestData, cardElement, currentRetryCount, autoRetryEnabled);
         }
     }
 
@@ -523,48 +572,123 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const retryBtn = container.querySelector('.regenerate-btn');
         retryBtn.addEventListener('click', () => {
-            // Replace card content with loading and fetch again
-            container.innerHTML = `
-                <div class="result-image-container">
-                    <div class="result-status">
-                        <div class="spinner"></div>
-                        <div class="status-text">准备中...</div>
-                        <div class="progress-container" style="width: 80%; margin-top: 10px; background: #eee; height: 6px; border-radius: 3px; overflow: hidden; display: none;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s;"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            fetchImage(baseUrl, apiKey, requestData, null, container);
+            // Get current card's retry info
+            const card = container.closest('.result-card');
+            const currentRetryCount = card ? parseInt(card.dataset.retryCount || '0') : 0;
+            const autoRetryEnabled = card ? card.dataset.autoRetryEnabled === 'true' : autoRetryCheckbox.checked;
+            const newRetryCount = currentRetryCount + 1;
+
+            if (card) {
+                card.dataset.retryCount = newRetryCount;
+                card.dataset.autoRetryEnabled = autoRetryEnabled ? 'true' : 'false';
+            }
+
+            renderLoadingState(container, card, baseUrl, apiKey, requestData, newRetryCount);
         });
     }
 
-    function renderError(container, errorMessage, baseUrl, apiKey, requestData) {
+    function renderError(container, errorMessage, baseUrl, apiKey, requestData, cardElement, retryCount = 0, autoRetryEnabled = false, immediate = false) {
+        // Clear any existing countdown timers on the card
+        if (cardElement && cardElement._countdownTimer) {
+            clearInterval(cardElement._countdownTimer);
+            delete cardElement._countdownTimer;
+        }
+
+        const newRetryCount = retryCount + 1;
+
         container.innerHTML = `
             <div class="result-image-container">
                 <div class="result-status">
-                    <div style="font-size: 6rem; margin-bottom: 10px; color: var(--md-sys-color-error);">✕</div>
+                    <div style="font-size: 50px; margin-bottom: 5px; color: var(--md-sys-color-error);">✕</div>
                     <div class="status-error"><b style="font-size: 1.1rem; line-height: 2;">生成失败</b><br>${errorMessage}</div>
+                    <div class="retry-actions" style="margin-top: 15px;"></div>
                 </div>
             </div>
-            <button class="retry-btn" style="margin: 10px; float: right;"><span class="button-icon">⟳</span>重试</button>
         `;
 
-        const retryBtn = container.querySelector('.retry-btn');
-        retryBtn.addEventListener('click', () => {
-            container.innerHTML = `
-                <div class="result-image-container">
-                    <div class="result-status">
-                        <div class="spinner"></div>
-                        <div class="status-text">准备中...</div>
-                        <div class="progress-container" style="width: 80%; margin-top: 10px; background: #eee; height: 6px; border-radius: 3px; overflow: hidden; display: none;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s;"></div>
-                        </div>
-                    </div>
-                </div>
+        const retryActionsDiv = container.querySelector('.retry-actions');
+
+        const startManualRetry = (count) => {
+            if (cardElement) cardElement.dataset.retryCount = count;
+            renderLoadingState(container, cardElement, baseUrl, apiKey, requestData, count);
+        };
+
+        const showManualActions = (resetCount = false) => {
+            retryActionsDiv.innerHTML = `
+                <button class="retry-btn manual-retry-btn" style="margin-top: 10px;"><span class="button-icon">⟳</span>重试</button>
+                <button class="retry-btn enable-auto-retry-btn" style="margin-top: 10px; background: var(--md-sys-color-secondary); color: var(--md-sys-color-on-secondary);">开启自动重试</button>
             `;
-            fetchImage(baseUrl, apiKey, requestData, null, container);
-        });
+
+            retryActionsDiv.querySelector('.manual-retry-btn').addEventListener('click', () => {
+                const countToUse = resetCount ? 1 : newRetryCount;
+                startManualRetry(countToUse);
+            });
+
+            retryActionsDiv.querySelector('.enable-auto-retry-btn').addEventListener('click', () => {
+                if (cardElement) cardElement.dataset.autoRetryEnabled = 'true';
+                // Immediate retry
+                const countToUse = resetCount ? 0 : retryCount; // renderError will +1 it
+                renderError(container, errorMessage, baseUrl, apiKey, requestData, cardElement, countToUse, true, true);
+            });
+        };
+
+        if (autoRetryEnabled) {
+            // Show countdown
+            // Delay formula: 5 * 1.1^(retryCount-1)
+            // newRetryCount is the count of the retry about to happen (1, 2, 3...)
+            const delayTime = 5 * Math.pow(1.1, newRetryCount - 1);
+            let countdown = immediate ? 0 : Math.ceil(delayTime);
+
+            const executeRetry = () => {
+                if (cardElement) {
+                    if (cardElement._countdownTimer) {
+                        clearInterval(cardElement._countdownTimer);
+                        delete cardElement._countdownTimer;
+                    }
+                    cardElement.dataset.retryCount = newRetryCount;
+                }
+                renderLoadingState(container, cardElement, baseUrl, apiKey, requestData, newRetryCount);
+            };
+
+            if (countdown <= 0) {
+                executeRetry();
+                return;
+            }
+
+            retryActionsDiv.innerHTML = `
+                <div class="retry-countdown">将在 <span id="countdown">${countdown}</span> 秒后自动重试...</div>
+                <button class="retry-btn cancel-retry-btn" style="margin-top: 10px;">取消自动重试</button>
+            `;
+
+            const countdownSpan = retryActionsDiv.querySelector('#countdown');
+            const cancelBtn = retryActionsDiv.querySelector('.cancel-retry-btn');
+
+            // Store timer on card so it can be cleared
+            if (cardElement) {
+                cardElement._countdownTimer = setInterval(() => {
+                    countdown--;
+                    if (countdownSpan) countdownSpan.textContent = countdown;
+
+                    if (countdown <= 0) {
+                        executeRetry();
+                    }
+                }, 1000);
+            }
+
+            cancelBtn.addEventListener('click', () => {
+                if (cardElement && cardElement._countdownTimer) {
+                    clearInterval(cardElement._countdownTimer);
+                    delete cardElement._countdownTimer;
+                }
+                if (cardElement) {
+                    cardElement.dataset.autoRetryEnabled = 'false';
+                    cardElement.dataset.retryCount = '0';
+                }
+                showManualActions(true);
+            });
+        } else {
+            showManualActions(false);
+        }
     }
 
     function showInfoModal(data, apiKey, baseUrl) {

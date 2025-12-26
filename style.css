@@ -426,6 +426,19 @@ select:focus {
 }
 
 .result-card {
+    /* Layout Wrapper */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
+    transition: transform 0.4s cubic-bezier(0.05, 0.7, 0.1, 1);
+    transform-origin: center center;
+}
+
+.result-card-visual {
     background: var(--card-bg);
     border-radius: var(--radius-xl);
     overflow: hidden;
@@ -433,8 +446,9 @@ select:focus {
     display: flex;
     flex-direction: column;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.05, 0.7, 0.1, 1);
-    transform-origin: center center;
+    width: 100%;
+    height: 100%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .result-card.entering {
@@ -446,9 +460,14 @@ select:focus {
     pointer-events: none;
 }
 
-.result-card:hover {
+.result-card:hover .result-card-visual {
     box-shadow: var(--shadow-lg);
     transform: translateY(-4px);
+}
+
+.result-card:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .result-image-container {
@@ -491,6 +510,8 @@ select:focus {
 
 .status-error {
     color: var(--md-sys-color-error);
+    max-height: 180px;
+    overflow-y: scroll;
     font-size: 0.9rem;
     word-break: break-word;
     background: var(--md-sys-color-error-container);
@@ -798,4 +819,30 @@ select:focus {
     font-size: 1.3rem;
     line-height: 0;
     margin-right: 5px;
+}
+
+/* Auto Retry Styles */
+.retry-countdown {
+    font-size: 0.9rem;
+    color: var(--md-sys-color-tertiary);
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.retry-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.retry-toggle-checkbox {
+    accent-color: var(--md-sys-color-primary);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }
